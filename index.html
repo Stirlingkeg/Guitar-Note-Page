@@ -43,11 +43,11 @@
             margin-bottom: 30px;
         }
 
-        .setup-screen, .game-screen, .review-screen, .stats-screen {
+        .setup-screen, .mode-select-screen, .game-screen, .review-screen, .stats-screen {
             display: none;
         }
 
-        .setup-screen.active, .game-screen.active, .review-screen.active, .stats-screen.active {
+        .setup-screen.active, .mode-select-screen.active, .game-screen.active, .review-screen.active, .stats-screen.active {
             display: block;
         }
 
@@ -93,6 +93,24 @@
         button:active {
             background: black;
             color: white;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mode-description {
+            background: white;
+            border: 2px solid black;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .mode-description h3 {
+            margin-bottom: 10px;
         }
 
         .question-card {
@@ -251,13 +269,34 @@
         <h1>Guitar Fretboard Trainer</h1>
         <p class="subtitle">Master your fretboard, one note at a time</p>
 
+        <!-- Mode Selection Screen -->
+        <div class="mode-select-screen active" id="modeSelectScreen">
+            <div class="mode-description">
+                <h3>Practice Mode</h3>
+                <p>Take your time. Press Enter when ready, get feedback, track wrong answers, and review mistakes every 10 questions.</p>
+            </div>
+            <div class="mode-description">
+                <h3>Timed Mode</h3>
+                <p>Speed training. Each note appears for a set time, shows the answer automatically, then moves to the next. No feedback tracking.</p>
+            </div>
+            <div class="mode-buttons">
+                <button onclick="selectMode('practice')">Practice Mode</button>
+                <button onclick="selectMode('timed')">Timed Mode</button>
+            </div>
+        </div>
+
         <!-- Setup Screen -->
-        <div class="setup-screen active" id="setupScreen">
+        <div class="setup-screen" id="setupScreen">
             <div class="input-group">
                 <label for="numQuestions">Number of questions (0 for infinite):</label>
                 <input type="number" id="numQuestions" value="20" min="0">
             </div>
+            <div class="input-group" id="timedDelayGroup" style="display:none;">
+                <label for="timedDelay">Seconds per note:</label>
+                <input type="number" id="timedDelay" value="5" min="1" max="30">
+            </div>
             <button onclick="startTraining()">Start Training</button>
+            <button onclick="backToModeSelect()" style="margin-top: 10px; background: white; color: black;">Back</button>
         </div>
 
         <!-- Game Screen -->
@@ -267,11 +306,11 @@
                     <div class="stat-label">Question</div>
                     <div class="stat-value" id="currentQuestion">1</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="correctBox">
                     <div class="stat-label">Correct</div>
                     <div class="stat-value" id="correctCount">0</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="wrongBox">
                     <div class="stat-label">Wrong</div>
                     <div class="stat-value" id="wrongCount">0</div>
                 </div>
@@ -289,7 +328,7 @@
                     <div class="answer-fret" id="fretDisplay">Fret 5</div>
                 </div>
 
-                <div class="button-group">
+                <div class="button-group" id="practiceButtons">
                     <button class="btn-correct" onclick="markAnswer(true)">Got it Right</button>
                     <button class="btn-wrong" onclick="markAnswer(false)">Got it Wrong</button>
                 </div>
@@ -321,15 +360,15 @@
                     <div class="stat-label">Total Questions</div>
                     <div class="stat-value" id="totalQuestions">0</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="finalCorrectBox">
                     <div class="stat-label">Correct Answers</div>
                     <div class="stat-value" id="finalCorrect">0</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="finalWrongBox">
                     <div class="stat-label">Wrong Answers</div>
                     <div class="stat-value" id="finalWrong">0</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="accuracyBox">
                     <div class="stat-label">Accuracy</div>
                     <div class="stat-value" id="accuracy">0%</div>
                 </div>
@@ -340,6 +379,7 @@
     </div>
 
     <script>
+        let currentMode = 'practice';
         let currentNote = '';
         let currentString = 0;
         let currentFret = 0;
@@ -348,6 +388,8 @@
         let questionCount = 0;
         let totalQuestions = 0;
         let wrongAnswers = [];
+        let timedDelay = 5;
+        let timedTimeout = null;
 
         const notes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
         
@@ -374,8 +416,36 @@
             }
         }
 
+        function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeSelectScreen').classList.remove('active');
+            document.getElementById('setupScreen').classList.add('active');
+            
+            if (mode === 'timed') {
+                document.getElementById('timedDelayGroup').style.display = 'block';
+            } else {
+                document.getElementById('timedDelayGroup').style.display = 'none';
+            }
+        }
+
+        function backToModeSelect() {
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('modeSelectScreen').classList.add('active');
+        }
+
         function startTraining() {
             totalQuestions = parseInt(document.getElementById('numQuestions').value);
+            
+            if (currentMode === 'timed') {
+                timedDelay = parseInt(document.getElementById('timedDelay').value);
+                // Hide practice-specific UI elements
+                document.getElementById('correctBox').style.display = 'none';
+                document.getElementById('wrongBox').style.display = 'none';
+                document.getElementById('finalCorrectBox').style.display = 'none';
+                document.getElementById('finalWrongBox').style.display = 'none';
+                document.getElementById('accuracyBox').style.display = 'none';
+            }
+            
             document.getElementById('setupScreen').classList.remove('active');
             document.getElementById('gameScreen').classList.add('active');
             nextQuestion();
@@ -384,8 +454,8 @@
         function nextQuestion() {
             questionCount++;
             
-            // Check if we should review wrong answers (every 10 questions)
-            if (questionCount > 1 && (questionCount - 1) % 10 === 0 && wrongAnswers.length > 0) {
+            // Practice mode: Check if we should review wrong answers (every 10 questions)
+            if (currentMode === 'practice' && questionCount > 1 && (questionCount - 1) % 10 === 0 && wrongAnswers.length > 0) {
                 showReview();
                 return;
             }
@@ -406,7 +476,20 @@
             document.getElementById('stringDisplay').textContent = `String ${currentString}`;
             document.getElementById('currentQuestion').textContent = questionCount;
             document.getElementById('answerSection').classList.add('hidden');
-            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            
+            if (currentMode === 'practice') {
+                document.getElementById('showAnswerBtn').classList.remove('hidden');
+                document.getElementById('practiceButtons').style.display = 'grid';
+            } else {
+                // Timed mode: auto-show answer and move on
+                document.getElementById('showAnswerBtn').classList.add('hidden');
+                document.getElementById('practiceButtons').style.display = 'none';
+                
+                // Show answer after delay
+                timedTimeout = setTimeout(() => {
+                    showTimedAnswer();
+                }, timedDelay * 1000);
+            }
 
             // Speak the question
             speak(`${currentNote} string ${currentString}`);
@@ -417,6 +500,17 @@
             document.getElementById('answerSection').classList.remove('hidden');
             document.getElementById('showAnswerBtn').classList.add('hidden');
             speak(`Fret number ${currentFret}`);
+        }
+
+        function showTimedAnswer() {
+            document.getElementById('fretDisplay').textContent = `Fret ${currentFret}`;
+            document.getElementById('answerSection').classList.remove('hidden');
+            speak(`Fret number ${currentFret}`);
+            
+            // Move to next question after 2.5 seconds
+            timedTimeout = setTimeout(() => {
+                nextQuestion();
+            }, 2500);
         }
 
         function markAnswer(isCorrect) {
@@ -468,8 +562,13 @@
         }
 
         function showStats() {
-            // Final review if there are remaining wrong answers
-            if (wrongAnswers.length > 0) {
+            // Clear any pending timed timeouts
+            if (timedTimeout) {
+                clearTimeout(timedTimeout);
+            }
+
+            // Practice mode: Final review if there are remaining wrong answers
+            if (currentMode === 'practice' && wrongAnswers.length > 0) {
                 showReview();
                 // Modify the review button to show stats instead
                 document.querySelector('#reviewScreen button').onclick = function() {
@@ -488,11 +587,14 @@
         function displayFinalStats() {
             const total = questionCount - 1;
             document.getElementById('totalQuestions').textContent = total;
-            document.getElementById('finalCorrect').textContent = correctCount;
-            document.getElementById('finalWrong').textContent = wrongCount;
             
-            const accuracyPercent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-            document.getElementById('accuracy').textContent = `${accuracyPercent}%`;
+            if (currentMode === 'practice') {
+                document.getElementById('finalCorrect').textContent = correctCount;
+                document.getElementById('finalWrong').textContent = wrongCount;
+                
+                const accuracyPercent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+                document.getElementById('accuracy').textContent = `${accuracyPercent}%`;
+            }
         }
     </script>
 </body>
