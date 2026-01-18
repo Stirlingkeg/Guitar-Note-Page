@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Fretboard Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border: 2px solid black;
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: black;
+            margin-bottom: 10px;
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: black;
+            margin-bottom: 30px;
+        }
+
+        .setup-screen, .game-screen, .review-screen, .stats-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .game-screen.active, .review-screen.active, .stats-screen.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid black;
+            font-size: 16px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border: 2px solid black;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: black;
+            color: white;
+            border: 2px solid black;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: white;
+            color: black;
+        }
+
+        button:active {
+            background: black;
+            color: white;
+        }
+
+        .question-card {
+            background: black;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid black;
+        }
+
+        .question-number {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .question-string {
+            font-size: 24px;
+            opacity: 0.9;
+        }
+
+        .answer-card {
+            background: white;
+            padding: 30px;
+            border: 2px solid black;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .answer-label {
+            font-size: 14px;
+            color: black;
+            margin-bottom: 5px;
+        }
+
+        .answer-fret {
+            font-size: 36px;
+            font-weight: bold;
+            color: black;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-correct {
+            background: black;
+            color: white;
+        }
+
+        .btn-correct:hover {
+            background: white;
+            color: black;
+        }
+
+        .btn-wrong {
+            background: white;
+            color: black;
+            border: 2px solid black;
+        }
+
+        .btn-wrong:hover {
+            background: black;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: black;
+            border: 2px solid black;
+        }
+
+        .btn-secondary:hover {
+            background: black;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border: 2px solid black;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: black;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: black;
+        }
+
+        .review-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid black;
+        }
+
+        .review-header {
+            background: black;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border: 2px solid black;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            .question-text {
+                font-size: 36px;
+            }
+
+            .question-string {
+                font-size: 18px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guitar Fretboard Trainer</h1>
+        <p class="subtitle">Master your fretboard, one note at a time</p>
+
+        <!-- Setup Screen -->
+        <div class="setup-screen active" id="setupScreen">
+            <div class="input-group">
+                <label for="numQuestions">Number of questions (0 for infinite):</label>
+                <input type="number" id="numQuestions" value="20" min="0">
+            </div>
+            <button onclick="startTraining()">Start Training</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Question</div>
+                    <div class="stat-value" id="currentQuestion">1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Correct</div>
+                    <div class="stat-value" id="correctCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Wrong</div>
+                    <div class="stat-value" id="wrongCount">0</div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-number">Find this note:</div>
+                <div class="question-text" id="noteDisplay">D</div>
+                <div class="question-string" id="stringDisplay">String 3</div>
+            </div>
+
+            <div id="answerSection" class="hidden">
+                <div class="answer-card">
+                    <div class="answer-label">Correct Answer:</div>
+                    <div class="answer-fret" id="fretDisplay">Fret 5</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-correct" onclick="markAnswer(true)">Got it Right</button>
+                    <button class="btn-wrong" onclick="markAnswer(false)">Got it Wrong</button>
+                </div>
+            </div>
+
+            <button id="showAnswerBtn" onclick="showAnswer()">Show Answer</button>
+        </div>
+
+        <!-- Review Screen -->
+        <div class="review-screen" id="reviewScreen">
+            <div class="review-header">
+                Time to Practice Your Mistakes
+                <div style="font-size: 14px; margin-top: 10px; font-weight: normal;">
+                    You got <span id="reviewCount">0</span> wrong. Let's review them.
+                </div>
+            </div>
+
+            <div id="reviewList"></div>
+
+            <button onclick="finishReview()">Continue Training</button>
+        </div>
+
+        <!-- Stats Screen -->
+        <div class="stats-screen" id="statsScreen">
+            <h2 style="text-align: center; margin-bottom: 20px; color: black;">Session Complete</h2>
+            
+            <div class="stats" style="grid-template-columns: 1fr;">
+                <div class="stat-box">
+                    <div class="stat-label">Total Questions</div>
+                    <div class="stat-value" id="totalQuestions">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Correct Answers</div>
+                    <div class="stat-value" id="finalCorrect">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Wrong Answers</div>
+                    <div class="stat-value" id="finalWrong">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Accuracy</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" style="margin-top: 20px;">Start New Session</button>
+        </div>
+    </div>
+
+    <script>
+        let currentNote = '';
+        let currentString = 0;
+        let currentFret = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let questionCount = 0;
+        let totalQuestions = 0;
+        let wrongAnswers = [];
+
+        const notes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+        
+        function calculateFret(note, stringNum) {
+            const noteValues = {'A': 0, 'B': 2, 'C': 3, 'D': 5, 'E': 7, 'F': 8, 'G': 10};
+            const openStrings = {1: 7, 2: 2, 3: 10, 4: 5, 5: 0, 6: 7};
+            
+            let noteValue = noteValues[note];
+            let openStringNote = openStrings[stringNum];
+            
+            let fret = noteValue - openStringNote;
+            if (fret < 0) {
+                fret += 12;
+            }
+            
+            return fret;
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startTraining() {
+            totalQuestions = parseInt(document.getElementById('numQuestions').value);
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            questionCount++;
+            
+            // Check if we should review wrong answers (every 10 questions)
+            if (questionCount > 1 && (questionCount - 1) % 10 === 0 && wrongAnswers.length > 0) {
+                showReview();
+                return;
+            }
+
+            // Check if we've reached the total
+            if (totalQuestions > 0 && questionCount > totalQuestions) {
+                showStats();
+                return;
+            }
+
+            // Generate new question
+            currentNote = notes[Math.floor(Math.random() * notes.length)];
+            currentString = Math.floor(Math.random() * 6) + 1;
+            currentFret = calculateFret(currentNote, currentString);
+
+            // Update UI
+            document.getElementById('noteDisplay').textContent = currentNote;
+            document.getElementById('stringDisplay').textContent = `String ${currentString}`;
+            document.getElementById('currentQuestion').textContent = questionCount;
+            document.getElementById('answerSection').classList.add('hidden');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+
+            // Speak the question
+            speak(`${currentNote} string ${currentString}`);
+        }
+
+        function showAnswer() {
+            document.getElementById('fretDisplay').textContent = `Fret ${currentFret}`;
+            document.getElementById('answerSection').classList.remove('hidden');
+            document.getElementById('showAnswerBtn').classList.add('hidden');
+            speak(`Fret number ${currentFret}`);
+        }
+
+        function markAnswer(isCorrect) {
+            if (isCorrect) {
+                correctCount++;
+                document.getElementById('correctCount').textContent = correctCount;
+            } else {
+                wrongCount++;
+                document.getElementById('wrongCount').textContent = wrongCount;
+                wrongAnswers.push({
+                    note: currentNote,
+                    string: currentString,
+                    fret: currentFret
+                });
+            }
+
+            nextQuestion();
+        }
+
+        function showReview() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('reviewScreen').classList.add('active');
+            document.getElementById('reviewCount').textContent = wrongAnswers.length;
+
+            const reviewList = document.getElementById('reviewList');
+            reviewList.innerHTML = '';
+
+            wrongAnswers.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'review-item';
+                div.innerHTML = `
+                    <strong>Review #${index + 1}:</strong> ${item.note} on String ${item.string}
+                    <div style="margin-top: 10px; font-size: 18px;">
+                        <strong>Answer: Fret ${item.fret}</strong>
+                    </div>
+                `;
+                reviewList.appendChild(div);
+            });
+
+            speak('Time to practice your mistakes');
+        }
+
+        function finishReview() {
+            wrongAnswers = [];
+            document.getElementById('reviewScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            speak('Review complete');
+            nextQuestion();
+        }
+
+        function showStats() {
+            // Final review if there are remaining wrong answers
+            if (wrongAnswers.length > 0) {
+                showReview();
+                // Modify the review button to show stats instead
+                document.querySelector('#reviewScreen button').onclick = function() {
+                    document.getElementById('reviewScreen').classList.remove('active');
+                    document.getElementById('statsScreen').classList.add('active');
+                    displayFinalStats();
+                };
+                return;
+            }
+
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('statsScreen').classList.add('active');
+            displayFinalStats();
+        }
+
+        function displayFinalStats() {
+            const total = questionCount - 1;
+            document.getElementById('totalQuestions').textContent = total;
+            document.getElementById('finalCorrect').textContent = correctCount;
+            document.getElementById('finalWrong').textContent = wrongCount;
+            
+            const accuracyPercent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+            document.getElementById('accuracy').textContent = `${accuracyPercent}%`;
+        }
+    </script>
+</body>
+</html>
